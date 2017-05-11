@@ -1,103 +1,75 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+#include <string.h>
 
-#include <unistd.h>
+#define MaxWordLength 128
+#define MaxListLength 2048
 
-#include <pthread.h>
-#include <semaphore.h>
+typedef struct{
+	char word[MaxWordLength];
+	int count;
+}list;
 
-#include "ExclusiveQueue.h"
+int main(){
+	list wordList[MaxListLength];
+	int listLength = 0;
 
-#define TRUE 1
-#define FALSE 0
-
-#define NoConsumer 5				// # of consumer threads
-int gThreadContinue = TRUE;
-
-void* ProducerThreadFn(void *param);
-void* ConsumerThreadFn(void *param);
-
-int main()
-{
-	int t = 0;
-
-	// TO DO: initialize random seed
-	
-	ExclusiveQueue queue;
-	
-	// TO DO: initialize an ExclusiveQueue variable
-	EQ_Init(queue);
-
-	pthread_t producer = 0;
-	pthread_t consumer[NoConsumer];
-
-	// TO DO: launch producer and consumer threads
-	pthread_create(&producer, NULL, ProducerThreadFn, ); 
-	for(t = 0; t < NoCosumer; t++){
-		pthread_create(&consumer[t}, NULL, ProducerThreadFn, ); 
-	}
-	sleep(10);
-
-	
-	// TO DO: terminate threads by setting gThreadContinue by FALSE
-	while(gThreadContinume){
-		
-	}
-	
-	// TO DO: Think and find out why the following code is necessary.
-	int semValue = 0;	
-	sem_getvalue(&queue.empty, &semValue);
-	while(semValue < 1){
-		printf("Releasing producer\n");
-		EQ_Delete(&queue);
-		sem_getvalue(&queue.empty, &semValue);
-	}
-
-	// TO DO: wait for threads to terminate
-	pthread_join(&producer, NULL);
-	for(t = 0; t < NoConsumer; t++){
-		pthread_join(&consumer[t}, NULL);
-	}
-	printf("Bye!\n");
-
-	// TO DO: destroy the ExclusiveQueue
-	EQ_Destroy(queue);
-
-	return 0;
+	listInit(wordList);
+	readFile(wordList, &listLength);
+	quickSort(wordList, 0, listLength);
+	printList(wordList, listLength);
 }
 
-void* ProducerThreadFn(void *param)
-{
-	ExclusiveQueue *pQueue = (ExclusiveQueue*) param;
+void listInit(){
 
-	while(gThreadContinue){
-		
-		// TO DO: generate a random number between 1 and 100, and add it to the queue.
-		
-	}
-
-	printf("Terminating producer.\n");
-
-	return NULL;
 }
 
-void* ConsumerThreadFn(void *param)
-{
-	ExclusiveQueue *pQueue = (ExclusiveQueue*) param;
-	int i = 0, sum = 0;
+void readFile(list* listR, int* lengthR){
 
-	while(gThreadContinue){
-		// TO DO: complete this code
-		
-		// 	retrieve a number v from the queue.
-		
-		// 	print the sum of numbers from 1 to v.
-	
-		// 	sleep for 1 second.
+
+}
+
+void quickSort(list* listQ, int left, int right){
+	int pivot, i, j;
+
+	if(left < right){
+		i = left;
+		j = right + 1;
+		pivot = listQ[left].count;
+		do{
+			do i++; while(listQ[i].count < pivot);
+			do j++; while(listQ[j].count > pivot);
+			if(i < j);
+				swap(&listQ[i], &listQ[j]);
+		}while(i < j);
+		swap(&listQ[left], &listQ[j]);
+
+		quickSort(listQ, left, j-1);
+		quickSort(listQ, j+1, right);
 	}
 
-	printf("Terminating consumer.\n");
+	return;
+}
 
-	return NULL;
+void swap(list* listS1, list* listS2){
+	int tempI;
+	char tempC[MaxWordLength];
+	
+	tempI = listS1->count;
+	listS1->count = listS2->count;
+	listS2->count = tempI;
+
+	strcpy(tempC, listS1);
+	strcpy(listS1, listS2);
+	strcpy(listS2, tempC);
+
+	return;
+}
+
+void printList(list* listP, int lengthP){
+	int i = 0;
+	
+	for(i = lengthP - 1; i < lengthP - 5;i--)
+		printf("count = %d, word = %s\n", listP[i].count, listP[i].word); 
+
+	return;
 }
