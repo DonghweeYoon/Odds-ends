@@ -13,9 +13,9 @@ void EQ_Init(ExclusiveQueue *pQueue)
 	// initialize mutex
 	pthread_mutex_init(&pQueue->mutex, NULL);
 
-	// initialize empty by 100 and full by 100
+	// initialize empty by 100 and full by 0
 	sem_init(&pQueue->empty, 0, 100);
-	sem_init(&pQueue->full, 0, 100);
+	sem_init(&pQueue->full, 0, 0);
 }
 
 void EQ_Destroy(ExclusiveQueue *pQueue)
@@ -36,7 +36,7 @@ void EQ_Add(ExclusiveQueue *pQueue, int v)
 	// insert v into the queue (critical section)
 	// checking full condition is not necessary
 	pQueue->array[pQueue->tail] = v;
-	pQueue->tail = (pQueue->tail + 1) & QueueSize;
+	pQueue->tail = (pQueue->tail + 1) % QueueSize;
 
 	// implement the exit section of producer (signal mutex and full)
 	pthread_mutex_unlock(&pQueue->mutex);
@@ -54,8 +54,8 @@ int EQ_Delete(ExclusiveQueue *pQueue)
 
 	// retrieve an item into v and delete it from the queue (critical section)
 	// checking empty condition is not necessary
-	v = pQueue->array[pQueue->head]; 
-	pQueue->head = (pQueue->head + 1) & QueueSize;
+	v = pQueue->array[pQueue->head];
+	pQueue->head = (pQueue->head + 1) % QueueSize;
 
 	// implement the exit section of consumer (signal mutex and empty)
 	pthread_mutex_unlock(&pQueue->mutex);
