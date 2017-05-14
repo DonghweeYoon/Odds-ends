@@ -25,7 +25,7 @@ int main(){
 
 	readFile(wordList, &listLength);
 	quickSort(wordList, 0, listLength - 1);
-//	printList(wordList, listLength);
+	printList(wordList, listLength);
 
 	return 0;
 }
@@ -44,9 +44,6 @@ void readFile(list* listR, int* lengthR){
 	while(fgets(line, MAX_LINE_LEN, fp)){
 		tokenLine(listR, lengthR, line);
 	}
-	for(i = 0; i < *lengthR; i++){
-		printf("i = %d, listR[i].count = %d, listR[i].word =%s\n", i, listR[i].count, listR[i].word);
-	}
 
 	fclose(fp);
 	return;
@@ -63,26 +60,19 @@ void tokenLine(list* listT, int* lengthT, char* lineT){
 	while((token != NULL) && (strlen(token) < MAX_WORD_LEN - 1)){
 		for(i = 0; i < *lengthT; i++){
 			if(strcmp(listT[i].word, token)== 0){
-			//	printf("Count case : listT[%d].word = %s, token = %s\n", i, listT[i].word, token);
 				listT[i].count++;
 				i = *lengthT;
 			}
 		}
 		
-//		printf("int the middle, i = %d, lengthT = %d\n", i, *lengthT);
-		
-		
 		if((i == (*lengthT)) && (i < MAX_LIST_LEN)){
 			listT[i].word = (char*)malloc(MAX_WORD_LEN * sizeof(char));
 
 			strcpy(listT[i].word, token);
-		//	printf("Initialize case : list[%d].word = %s, token = %s", i, listT[i].word, token);
 			listT[i].count++;
 			(*lengthT)++;
-		//	printf(", lengthT = %d\n", *lengthT);
 		}
 		token = strtok(NULL, " ");
-//		printf("token = %s!\n", token);
 	}
 	
 	return;
@@ -95,29 +85,14 @@ void quickSort(list* listQ, int left, int right){
 		i = left;
 		j = right + 1;
 		pivot = listQ[left].count;
-		printf("quickSort, listQ = %d, left = %d, j = %d\n", listQ, left, j);
 		do{
-			do{
-				i++; 
-			}while(listQ[i].count < pivot);
-			
-			do{
-				j--;
-			}while(listQ[j].count > pivot);
-			
-			printf("i = %d, j = %d\n", i, j);
+			do	i++; while(listQ[i].count < pivot);
+			do	j--; while(listQ[j].count > pivot);
 			if(i < j)
-				printf("i = %d, j = %d\n", i, j);
 				swap(&listQ[i], &listQ[j]);
-
-				for(k = 0; k < 17; k++){
-				printf("In the loop, i = %d, listR[i].count = %d, listR[i].word =%s\n", k, listQ[k].count, listQ[k].word);
-				}
 		}while(i < j);
 	
-		printf("HERE?, left = %d, j = %d\n", left, j);
 		swap(&listQ[left], &listQ[j]);
-		printf("quickSort, listQ = %d, left = %d, j = %d\n", listQ, left, j);
 		quickSort(listQ, left, j-1);
 		quickSort(listQ, j+1, right);
 	}
@@ -129,7 +104,6 @@ void swap(list* listS1, list* listS2){
 	int tempI;
 	char tempC[MAX_WORD_LEN];
 
-	printf("listS1 = %s, ListS2 = %s, listS1->count = %d, listS2->count = %d\n", listS1->word, listS2->word, listS1->count, listS2->count, tempI);	
 	tempI = listS1->count;
 	listS1->count = listS2->count;
 	listS2->count = tempI;
@@ -137,7 +111,7 @@ void swap(list* listS1, list* listS2){
 	strcpy(tempC, listS1->word);
 	strcpy(listS1->word, listS2->word);
 	strcpy(listS2->word, tempC);
-	printf("listS1 = %s, ListS2 = %s, listS1->count = %d, listS2->count = %d\n", listS1->word, listS2->word, listS1->count, listS2->count, tempI);	
+	
 	return;
 }
 
