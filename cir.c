@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define TAR 600851475143
+
 typedef struct node{
 	long prime;
 	struct node *link;
@@ -12,9 +14,15 @@ int main(){
 	primeList *past = NULL;
 	primeList *move = NULL;
 	
-	long num = 600851475143;
+	long num = TAR;
 	long temp = 0;
+	
 	head = (primeList*)malloc(sizeof(primeList));
+	if(!head){
+		printf("perror");
+		return -1;
+	}
+
 	pre = head;
 	pre->prime = 2;
 	pre->link = NULL;
@@ -22,24 +30,26 @@ int main(){
 	while(1){
 		pre = head;
 		while(pre){
-			printf("while first, %d, %ld\n", pre, pre->prime);
 			if((num % (pre->prime)) == 0){
-				printf("if");	
 				num /= (pre->prime);
 			}
 			else{
-				printf("else first,  %d, %ld\n", pre, pre->prime);
 				past = pre;
 				pre = pre->link;
-				printf("else last,  %d, %ld\n", past, past->prime);
 			}
 		}
-		printf("%ld", past->prime);
-		if(num == 1)
+		if(num == 1){
 			break;
-		num = 600851475143;
-		
+		}
+		num = TAR;
+
 		pre = (primeList*)malloc(sizeof(primeList));
+		if(!pre){
+			printf("perror");
+			return -1;
+		}
+		past->link = pre;
+
 		pre->prime = 0;
 		pre->link = NULL;
 		temp = (past->prime) + 1;
@@ -55,25 +65,15 @@ int main(){
 			temp++;
 		}
 	}
-	printf("The largest : %ld", past->prime);
+
+	printf("The largest : %ld\n", past->prime);
+	
+	pre = head;
+	while(pre==NULL){
+		past = pre;
+		pre=pre->link;
+		free(past);
+	}
+
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
