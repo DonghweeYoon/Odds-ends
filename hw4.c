@@ -2,17 +2,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+//define length max
 #define MAX_WORD_LEN 128
 #define MAX_LIST_LEN 2048
-#define MAX_FILE_LEN 65536
-#define MAX_LINE_LEN 2048
+#define MAX_LINE_LEN 4096
 
+//declare structure
 typedef struct{
 	char word[MAX_WORD_LEN];
 	int count;
 }list;
 
+//declare functions
 void readFile(list* listR, int* lengthR);
+void handleInput(char* lineH);
 void tokenLine(list* listT, int* lengthT, char* lineT);
 void quickSort(list* listQ, int left, int right);
 void swap(list* listS1, list* listS2);
@@ -29,22 +32,26 @@ int main(){
 	return 0;
 }
 
+//function to read a file and tokenize the input string
 void readFile(list* listR, int* lengthR){
 	FILE *fp;
 	char file_name[128];
-	char line[MAX_FILE_LEN];
+	char line[MAX_LINE_LEN];
 	int i = 0;
 
-	printf("input file name?\n");
+	printf("input file name\n");
 	scanf("%s", file_name);
 
+	//file open
 	fp = fopen(file_name, "r");
 	if(fp == NULL){
-		perror("file open fail");
+		perror("fopen failed");
 		return;
 	}
-
+	
+	//loop for tokenizing
 	while(fgets(line, MAX_LINE_LEN, fp)){
+		handleInput(line);
 		tokenLine(listR, lengthR, line);
 	}
 
@@ -52,21 +59,30 @@ void readFile(list* listR, int* lengthR){
 	return;
 }
 
+//String Handler for fgets (erase line feed & carriage return)
+void handleInput(char* lineH){
+	while((lineH[strlen(lineH)-1] == '\n') || (int)(lineH[strlen(lineH)-1] == '\r'))
+		lineH[strlen(lineH)-1] = '\0';
+	return;
+}
+
+//tokenize the input line
 void tokenLine(list* listT, int* lengthT, char* lineT){
 	int i;
 	char* token;
-
-	lineT[strlen(lineT)-1] = '\0';
-	lineT[strlen(lineT)-1] = '\0';
-	token = strtok(lineT, " ");
+	
+	token = strtok(lineT, " "); 
 	while(token != NULL){
+		//If the token exists in the list, count the number of the word
 		for(i = 0; i < *lengthT ; i++){
 			if(!strcmp(listT[i].word, token)){
 				listT[i].count++;
 				break;
 			}
 		}
-		if((i == *lengthT) && (i < MAX_LIST_LEN)){
+		//If the token doesn't exists in the list and the list is not full and ther word length is under the maximum
+		//input new word in the list
+		if((i == *lengthT) && (i < MAX_LIST_LEN) && (strlen(token) < MAX_WORD_LEN)){
 			strcpy(listT[i].word, token);
 			listT[i].count = 1;
 			(*lengthT)++;
@@ -76,6 +92,7 @@ void tokenLine(list* listT, int* lengthT, char* lineT){
 	return;
 }
 
+//quick sort algorithm
 void quickSort(list* listQ, int left, int right){
 	int pivot, i, j;
 
@@ -94,28 +111,29 @@ void quickSort(list* listQ, int left, int right){
 		quickSort(listQ, left, j-1);
 		quickSort(listQ, j+1, right);
 	}
-
 	return;
 }
 
+//swap function
 void swap(list* listS1, list* listS2){
 	int tempI;
 	char tempC[MAX_WORD_LEN];
+
 	tempI = listS1->count;
 	listS1->count = listS2->count;
 	listS2->count = tempI;
-
 	strcpy(tempC, listS1->word);
 	strcpy(listS1->word, listS2->word);
 	strcpy(listS2->word, tempC);
 	return;
 }
 
+//print five most frequently appeared words
 void printList(list* listP, int lengthP){
 	int i = 0;
-	
+
 	for(i = lengthP - 1; i > lengthP - 6; i--)
-		printf("count = %d, word = %s\n", listP[i].count, listP[i].word); 
+		printf("Word = %s, Count = %d\n", listP[i].word, listP[i].count) ; 
 
 	return;
 }
