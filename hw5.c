@@ -15,25 +15,25 @@ typedef struct node{
 	struct node *rightChild;
 }bSTPoint;
 
-void makeMap(bSTPoint *rootPM, char *mapFileName);
+void makeMap(bSTPoint **rootPM, char *mapFileName);
 void handleInput(char* lineH);
-void token_makeBST(char* lineT, bSTPoint *rootPMT);
+void token_makeBST(char* lineT, bSTPoint **rootPMT);
 void addNode(bSTPoint **rootPA, char *sourceA, char *targetA);
 bSTPoint *createNode(char *keyC, char *valueC);
-void reviseFile(bSTPoint *rootPR, char* sourceFileName);
-void token_write(char* lineW, bSTPoint *rootPMW, FILE *revisedFW);
-char* searchKey(bSTPoint *rootPP, char* inputKey);
+void reviseFile(bSTPoint **rootPR, char* sourceFileName);
+void token_write(char* lineW, bSTPoint **rootPMW, FILE *revisedFW);
+char* searchKey(bSTPoint **rootPP, char* inputKey);
 
 int main(int argc, char *argv[]){
 	bSTPoint *rootP = NULL;
 
-	makeMap(rootP, argv[2]);
-	reviseFile(rootP, argv[1]); 
+	makeMap(&rootP, argv[2]);
+	reviseFile(&rootP, argv[1]); 
 	
 	return 0;
 }
 
-void makeMap(bSTPoint *rootPM, char *mapFileName){
+void makeMap(bSTPoint **rootPM, char *mapFileName){
 	char line[MAX_LINE_LEN];
 	FILE *mapF = NULL;
 
@@ -57,15 +57,14 @@ void handleInput(char* lineH){
 		lineH[strlen(lineH)-1] = '\0';
 }
 
-void token_makeBST(char* lineT, bSTPoint *rootPMT){
+void token_makeBST(char* lineT, bSTPoint **rootPMT){
 	char* sourceW = NULL;
 	char* targetW = NULL;
 
 	sourceW = strtok(lineT, ":");
-	targetW = strtok(NULL, "\0");
-	printf("source : '%s', target : '%s'\n", sourceW, targetW);
-	addNode(&rootPMT, sourceW, targetW);
-	printf("source : '%s', target : '%s'\n", rootPMT->nodeKey, rootPMT->nodeValue);
+	targetW = strtok(NULL, " ");
+	
+	addNode(rootPMT, sourceW, targetW);
 }
 
 //add new node into the binary search tree.
@@ -78,10 +77,8 @@ void addNode(bSTPoint **rootPA, char *sourceA, char *targetA){
 	
 	//If the tree is empty
 	if(!temp){
-		rootPA = &newNode;
-		printf("first source : '%s', target : '%s'\n", (*rootPA)->nodeKey, (*rootPA)->nodeValue);
+		*rootPA = newNode;
 	}
-
 	//If the tree is not empty
 	else{
 		while(1){
@@ -90,7 +87,6 @@ void addNode(bSTPoint **rootPA, char *sourceA, char *targetA){
 					temp = temp->leftChild;
 				else{
 					temp->leftChild = newNode;
-					printf("left source : '%s', target : '%s'\n", temp->leftChild->nodeKey, temp->leftChild->nodeValue);
 					return;
 				}
 			}
@@ -99,7 +95,6 @@ void addNode(bSTPoint **rootPA, char *sourceA, char *targetA){
 					temp = temp->rightChild;
 				else{
 					temp->rightChild = newNode;
-					printf("right source : '%s', target : '%s'\n", temp->rightChild->nodeKey, temp->rightChild->nodeValue);
 					return;
 				}
 			}
@@ -128,7 +123,7 @@ bSTPoint *createNode(char *keyC, char *valueC){
 	return newNodeC;
 }
 
-void reviseFile(bSTPoint *rootPR, char* sourceFileName){
+void reviseFile(bSTPoint **rootPR, char* sourceFileName){
 	FILE* sourceF = NULL;
 	FILE* revisedF = NULL;
 	char line[MAX_LINE_LEN];
@@ -144,7 +139,7 @@ void reviseFile(bSTPoint *rootPR, char* sourceFileName){
 		perror("file open fail");
 		exit(-1);
 	}
-	
+
 	while(fgets(line, MAX_LINE_LEN, sourceF)){
 		handleInput(line);
 		token_write(line, rootPR, revisedF);
@@ -154,7 +149,7 @@ void reviseFile(bSTPoint *rootPR, char* sourceFileName){
 	fclose(revisedF);
 }
 
-void token_write(char* lineW, bSTPoint *rootPMW, FILE *revisedFW){
+void token_write(char* lineW, bSTPoint **rootPMW, FILE *revisedFW){
 	char* token = NULL;
 	char* written = NULL;
 
@@ -162,42 +157,35 @@ void token_write(char* lineW, bSTPoint *rootPMW, FILE *revisedFW){
 	while(token){
 		written = searchKey(rootPMW, token);
 		if(written){
-		//	fputs(written, revisedFW);
-		//	fputs(" ", revisedFW);
+			fputs(written, revisedFW);
+			fputs(" ", revisedFW);
 		}
 		else{
-		//	fputs(token, revisedFW);
-		//	fputs(" ", revisedFW);
+			fputs(token, revisedFW);
+			fputs(" ", revisedFW);
 		}
 		token = strtok(NULL, " ");
 	}
 }
 	
 //print the key and value of the binary search tree(inorder)
-char* searchKey(bSTPoint *rootPP, char* inputKey){
-	bSTPoint *temp = rootPP;
-	
-	if(strcmp(temp->nodeKey, inputKey) < 0){
-		if(temp->leftChild)
-			temp = temp->leftChild;
-	}
-	else if(strcmp(temp->nodeKey, inputKey) > 0){
-		if(temp->rightChild)
-			temp = temp->rightChild;
-	}
-	//If the input key exist in the tree, send an message 
-	else
-		return temp->nodeValue;
-}
-
-/*
-//Search the input value in the tree(inorder)
-void searchKey(bSTPoint *rootPSV, char *valueSV, int *searchSV){
-	if(rootPSV){
-		searchValue(rootPSV->leftChild, valueSV, searchSV);
-		if(strcmp(rootPSV->nodeValue, valueSV) == 0){
-			*searchSV = 1;
+char* searchKey(bSTPoint **rootPP, char* inputKey){
+	bSTPoint *temp = *rootPP;
+	while(1){
+		if(strcmp(inputKey, temp->nodeKey) < 0){
+			if(temp->leftChild)
+				temp = temp->leftChild;
+			else
+				return NULL;
 		}
-		searchValue(rootPSV->rightChild, valueSV, searchSV);
+		else if(strcmp(inputKey, temp->nodeKey) > 0){
+			if(temp->rightChild)
+				temp = temp->rightChild;
+			else
+				return NULL;
+		}
+		//If the input key exist in the tree, send an message 
+		else
+			return temp->nodeValue; 
 	}
-} */
+}
