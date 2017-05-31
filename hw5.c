@@ -1,191 +1,97 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 
-//define max length of value 1024
-#define MAX_WORD_LEN 128
-#define MAX_LINE_LEN 2048
+//Declare the followings globally.
+#define BitsForPageNo 6
+#define BitsForPageOffset 10
 
-//Structure for the binary search tree
-typedef struct node{
-	char nodeKey[MAX_WORD_LEN];
-	char nodeValue[MAX_WORD_LEN];
-	struct node *leftChild;
-	struct node *rightChild;
-}bSTPoint;
+#define ProcessSize 24800
 
-void makeMap(bSTPoint **rootPM, char *mapFileName);
-void handleInput(char* lineH);
-void token_makeBST(char* lineT, bSTPoint **rootPMT);
-void addNode(bSTPoint **rootPA, char *sourceA, char *targetA);
-bSTPoint *createNode(char *keyC, char *valueC);
-void reviseFile(bSTPoint **rootPR, char* sourceFileName);
-void token_write(char* lineW, bSTPoint **rootPMW, FILE *revisedFW);
-char* searchKey(bSTPoint **rootPP, char* inputKey);
+void init_page_table(int table[], int no_page);
+char* to_binary(unsigned short addr);
 
-int main(int argc, char *argv[]){
-	bSTPoint *rootP = NULL;
+unsigned short logical2physical(unsigned short logical_addr, int page_table[]);
 
-	makeMap(&rootP, argv[2]);
-	reviseFile(&rootP, argv[1]); 
+int main(){
+	int no_page = 0;
+	int *page_table = NULL;
+
+	//logical addresses to test case logical2physical() - can be changed
+	unsigned short logical_addr[] = { 0x21dd, 0x0829, 0x08f0, 0x0ad1, 0x071e, 0x0431, 0x0fb8, 0x0b18, 0x38ab, 0x07a0 };
+
+	int i = 0;
+
+	//print maximum # of pages and page size
+	no_page = ProcessSize / (1 << BitsForPageOffset) + 1;//compute # size of pages to store ProcessSize (=24800) bytes
+	page_table = (int*)malloc(no_page * sizeof(int));
+	if(page_table == NULL){
+		printf("Failed to allocate memory!\n");
+		exit(-1);
+	}
 	
+	init_page_table(page_table, no_page);
+
+	for(i = 0; i < 10; i++){
+		unsigned short physical_addr = logical2physical(logical_addr[i], page_table);
+		printf("0x%04x (%s)", logical_addr[i], to_binary(logical_addr[i]));
+		printf("--> 0x%04x (%s)\n", physical_addr, to_binary(physical_addr));
+	}
+	free(page_table);
+
 	return 0;
 }
 
-void makeMap(bSTPoint **rootPM, char *mapFileName){
-	char line[MAX_LINE_LEN];
-	FILE *mapF = NULL;
-
-	mapF = fopen(mapFileName, "r");
-	if(!mapF){
-		perror("file open fail");
-		exit(-1);
-	}
-
-	while(fgets(line, MAX_LINE_LEN, mapF)){
-		handleInput(line);
-		token_makeBST(line, rootPM);
-	}
-
-	fclose(mapF);
-}
-
-//String Handler for fgets (erase line feed & carriage return)
-void handleInput(char* lineH){
-	while((lineH[strlen(lineH)-1] == '\n') || (int)(lineH[strlen(lineH)-1] == '\r'))
-		lineH[strlen(lineH)-1] = '\0';
-}
-
-void token_makeBST(char* lineT, bSTPoint **rootPMT){
-	char* sourceW = NULL;
-	char* targetW = NULL;
-
-	sourceW = strtok(lineT, ":");
-	targetW = strtok(NULL, " ");
+void init_page_table(int table[], int no_page){
+	//Initialize page table entries
+	int i = 0;
 	
-	addNode(rootPMT, sourceW, targetW);
+	//For simple experiment, set table[i] by (i * 2 +3) for all i.
+	for(i = 0; i < no_page; i++){
+		table[i] = i * 2 + 3;
+	}
 }
 
-//add new node into the binary search tree.
-void addNode(bSTPoint **rootPA, char *sourceA, char *targetA){
-	bSTPoint *newNode = NULL;
-	bSTPoint *temp = *rootPA;
+//return a string containing binary representation of addr.
+//Given
+char* to_binary(unsigned short addr){
+	static char bits[17];
+	int i = 0;
+	for(i = 0; i < 16; i++){
+		bits[15 - i] = '0' + (addr & 1);
+		addr >>= 1;
+	}
+	bits[16] = 0;
+
+	return bits;
+}
+
+unsigned short logical2physical(unsigned short logical_addr, int page_table[]){
+	unsigned short pageNum;
+	unsigned short Offset;
+	unsigned short frameNum;
+	unsigned short physical_addr;
 	
-	//create new node with the input variables
-	newNode = createNode(sourceA, targetA);
+	//Given a page table, translates a logical address into the corresponding physical address.
+	//Retrieve page number from logical_addr
+	pageNum = logical_addr >> BitsForPageOffset;
+	//Retrieve page offset from logical_addr
+	Offset = logical_addr & 0x03ff;
 	
-	//If the tree is empty
-	if(!temp){
-		*rootPA = newNode;
-	}
-	//If the tree is not empty
-	else{
-		while(1){
-			if(strcmp(newNode->nodeKey, temp->nodeKey) < 0){
-				if(temp->leftChild)
-					temp = temp->leftChild;
-				else{
-					temp->leftChild = newNode;
-					return;
-				}
-			}
-			else if(strcmp(newNode->nodeKey, temp->nodeKey) > 0){
-				if(temp->rightChild)
-					temp = temp->rightChild;
-				else{
-					temp->rightChild = newNode;
-					return;
-				}
-			}
-			//If the input key exist in the tree, send an message 
-			else{
-				printf("Duplicate key words in the map file. Latter one is ignored\n");
-				return;
-			}
-		}
-	}
-}
-
-//Create new node with input variables
-bSTPoint *createNode(char *keyC, char *valueC){
-	bSTPoint *newNodeC = NULL;	
-	if(!(newNodeC = (bSTPoint*)malloc(sizeof(bSTPoint)))){
-		perror("malloc Failure\n");
-		return NULL; 
-	}
+	//Convert page number into frame number using page_table
+	frameNum = page_table[pageNum];
+	//Combine frame number and page offset to make physical address
+	physical_addr = (frameNum << BitsForPageOffset) | Offset;
 	
-	strcpy(newNodeC->nodeKey, keyC);
-	strcpy(newNodeC->nodeValue, valueC);
-	newNodeC->leftChild = NULL;
-	newNodeC->rightChild = NULL;
-
-	return newNodeC;
+	//Retrun physical address
+	return physical_addr;
 }
 
-void reviseFile(bSTPoint **rootPR, char* sourceFileName){
-	FILE* sourceF = NULL;
-	FILE* revisedF = NULL;
-	char line[MAX_LINE_LEN];
-	
-	sourceF = fopen(sourceFileName, "r");
-	if(!sourceF){
-		perror("file open fail");
-		exit(-1);
-	}
 
-	revisedF = fopen(strcat(sourceFileName, ".rev"), "w");
-	if(!revisedF){
-		perror("file open fail");
-		exit(-1);
-	}
-
-	while(fgets(line, MAX_LINE_LEN, sourceF)){
-		handleInput(line);
-		token_write(line, rootPR, revisedF);
-	}
-
-	fclose(sourceF);
-	fclose(revisedF);
-}
-
-void token_write(char* lineW, bSTPoint **rootPMW, FILE *revisedFW){
-	char* token = NULL;
-	char* written = NULL;
-
-	token = strtok(lineW, " ");
-	while(token){
-		written = searchKey(rootPMW, token);
-		if(written){
-			fputs(written, revisedFW);
-			fputs(" ", revisedFW);
-		}
-		else{
-			fputs(token, revisedFW);
-			fputs(" ", revisedFW);
-		}
-		token = strtok(NULL, " ");
-	}
-}
-	
-//print the key and value of the binary search tree(inorder)
-char* searchKey(bSTPoint **rootPP, char* inputKey){
-	bSTPoint *temp = *rootPP;
-	while(1){
-		if(strcmp(inputKey, temp->nodeKey) < 0){
-			if(temp->leftChild)
-				temp = temp->leftChild;
-			else
-				return NULL;
-		}
-		else if(strcmp(inputKey, temp->nodeKey) > 0){
-			if(temp->rightChild)
-				temp = temp->rightChild;
-			else
-				return NULL;
-		}
-		//If the input key exist in the tree, send an message 
-		else
-			return temp->nodeValue; 
-	}
-}
+/*
+What is the maximum number of page table entries?
+64, 6 bits for number of page, so 2^6
+What is the size of a page (in bytes)?
+1024, 10 bits for offset of page, so 2&10
+How many pages are necessary to store a process whose size is 24800 bytes?
+25, (24800 / the size of a page) + 1
+*/
